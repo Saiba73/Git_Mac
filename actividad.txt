@@ -1,0 +1,38 @@
+import Foundation
+
+let let1 = 0
+let let2 = 2.4
+let let3 = "string"
+let let4 = true
+let let5 = "y"
+
+print(type(of: let1))
+print(type(of: let2))
+print(type(of: let3))
+print(type(of: let4))
+print(type(of: let5))
+
+let let6:Int = 4
+let let7:UInt = 7
+let let8:Float = 3.3
+let let9:Double = 0.334343434343434343
+let let10:Character = "c"
+
+
+var var1 = 0
+var var2 = 2.4
+var var3 = "string"
+var var4 = true
+var var5 = "y"
+
+print(type(of: var1))
+print(type(of: var2))
+print(type(of: var3))
+print(type(of: var4))
+print(type(of: var5))
+
+var var6:Int64 = 445454567633777344545344
+var var7:UInt = 7
+var var8:Float = 3.3
+var var9:Double = 0.334343434343434343
+var var10:Character = "c"
