@@ -1,0 +1,77 @@
+/*
+Lo que estoy tratando de replicar con este codigo es crear
+una replica de dungeons and dragons. Nunca eh jugado el juego,
+pero trate de replicarlo lo mejor que pude con el conozimiento 
+que tengo del juego.
+*/
+
+class guerrero{
+    var hp:Int = 30
+    var fuerza:Int = 50
+    var inteligencia:Int = 5
+    var destreza:Int = 20
+    
+    func ataque() -> String{
+        return "Ataque con espada"
+    }
+    
+    func defender() -> String{
+        return "Se de defiende con escudo"
+    }
+    
+}
+
+class mago{
+    var hp:Int = 15
+    var fuerza:Int = 8
+    var inteligencia:Int = 45
+    var destreza:Int = 25
+    
+    func ataque() -> String{
+        return "Ataque con echizo"
+    }
+    
+    func curar() -> String{
+        return "Curar con echizo"
+    }
+}
+
+class monje{
+    var hp:Int = 25
+    var fuerza:Int = 40
+    var inteligencia:Int = 35
+    var destreza:Int = 35
+    
+    func ataque() -> String{
+        return "Ataque con puños"
+    }
+    
+    func meditar() -> String{
+        return "Medita y recupera salud"
+    }
+}
+
+class game_master {
+    
+    func progresar_narrativa() -> String{
+        return "Cuanta la historia y progresa la narrativa"
+    }
+    
+    func rodar_dados() -> Int{
+        return Int.random(in: 1..<21)
+    }
+    
+}
+
+class jugador {
+    var nombre: String
+    var clase
+    
+    func tomar_accion_narrativa() -> String{
+        return "El jugador toma una accion narrativa"
+    }
+    
+    func entrar_en_combate() -> String{
+        return "El jugador entra en combate"
+    }
+}
