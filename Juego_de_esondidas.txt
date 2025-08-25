@@ -1,0 +1,31 @@
+func validar_entrada_a_numero() -> Int{
+    var entrada_del_usuario: String? = nil
+    let numero_valido = Int.random(in: 1...100)
+    var intentos: Int = 0
+ 
+    
+    while true{
+        print("Por favor introduce un numero")
+        entrada_del_usuario = readLine()
+        intentos += 1
+        if entrada_del_usuario == nil{
+            print("Que paso mi hacker, creias que habia una vulnerabilidad")
+        }
+        var respuesta_numero = Int(entrada_del_usuario!)
+        if respuesta_numero == nil {
+            print("Lo que introdujistes no fue un numero entero, por favor usa numeros y no letras.")
+        }
+        else if respuesta_numero! > numero_valido {
+            print("El numero es mas bajo")
+        }
+        else if respuesta_numero! < numero_valido {
+            print("El numero es mas alto")
+        }
+        else{
+            print("GANASTE Intentos: \(intentos)")
+            return numero_valido
+        }
+    }
+}
+ 
+var respuesta_del_usuario = validar_entrada_a_numero()
