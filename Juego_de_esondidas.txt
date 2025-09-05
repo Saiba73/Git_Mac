@@ -1,179 +1,358 @@
 enum RolesJuegoEscondidas{
     case contando
     case buscando_jugadores
- 
     
     case buscando_escondite
     case escondido
     case regresando_a_base
     case encontrado
+    
     case cantar_victoria
-    case suspendido /// Es el caso en que el juego vuelve a su estado original de inicio.
+    case ganador_extra
+    case suspendido
 }
- 
- 
+
+
 protocol JugadorDeEscondidas: class{
     var rol: RolesJuegoEscondidas { get set }
+    var compañeros_de_juego: [JugadorDeEscondidas] { get set }
+    var nombre: String { get set }
+    var lugar_actual: UbicacionFisica? { get set }
+    var visibilidad: Double { get set }
+    
     func actualizar() -> Bool
+    
     func establecer_rol(_ rol_nuevo: RolesJuegoEscondidas) -> Bool
+    
+    func agregar_compañero(_ compañero_nuevo: JugadorDeEscondidas) -> Bool
 }
- 
- 
-extension JugadorDeEscondidas { /// Al parecer un protocol se instancia como un struct y no puede mutar el tipo de dato a menos que tenga modificado que aplciara a un tipo en especifico
+
+
+extension JugadorDeEscondidas {
     func establecer_rol(_ rol_nuevo: RolesJuegoEscondidas) -> Bool {
         switch(self.rol){
-            case .suspendido: 
+            case .suspendido:
                 self.rol = rol_nuevo
                 return true
-            case .cantar_victoria, .encontrado: 
+            
+            case .cantar_victoria, .encontrado:
                 if rol_nuevo == .suspendido {
                     self.rol = rol_nuevo
                     return true
                 }
                 return false
-
-            default: 
+                
+                
+            default:
                 return false
         }
+        
     }
 }
- 
+
 struct Ubicacion2Dimensiones{
     var x: Int
-    var y: Int 
+    var y: Int
+    
     init(_ x: Int, _ y: Int){
         self.x = x
         self.y = y
     }
 }
- 
-class UbicacionFisica{
+
+class UbicacionFisica: Equatable {
+    static func == (lhs: UbicacionFisica, rhs: UbicacionFisica) -> Bool {
+        return lhs.nombre == rhs.nombre
+    }
+    
     var nombre: String
     var lugares_cercanos: [UbicacionFisica]
-    init(_ nombre: String, lugares_cercanos: [UbicacionFisica]){
+    
+    init(_ nombre: String){
         self.nombre = nombre
-        self.lugares_cercanos = lugares_cercanos
+        self.lugares_cercanos = []
     }
+    
     func agregar_lugar(_ lugar: UbicacionFisica) -> Bool{
         for ubicacion in lugares_cercanos{
             if ubicacion.nombre == lugar.nombre{
                 return false
             }
         }
+        
         lugar.lugares_cercanos.append(self)
         self.lugares_cercanos.append(lugar)
+        
         return true
     }
 }
- 
+
 class Personaje {
     var nombre: String
     var ubicacion: UbicacionFisica?
+    
     init(_ nombre: String){
         self.nombre = nombre
         self.ubicacion = nil
     }
+    
     func establecer_ubicacion(_ nueva_ubicacion: UbicacionFisica) -> Bool{
         if ubicacion == nil{
-        self.ubicacion = nueva_ubicacion
-            return false
+            self.ubicacion = nueva_ubicacion
+            return true
         }
+        
         if ubicacion!.nombre == nueva_ubicacion.nombre{
             return false
         }
+        
         ubicacion = nueva_ubicacion
         return true
-        }
+    }
+    
 }
- 
+
+///aqui se crea el objeto coleccionable para una condicion alterna para ganr
+class EstrellaFugaz {
+    var ubicacion: UbicacionFisica
+    init(ubicacion: UbicacionFisica) {
+        self.ubicacion = ubicacion
+    }
+}
+
 class PersonajeJugable: Personaje, JugadorDeEscondidas{
     var visibilidad: Double
     var rol: RolesJuegoEscondidas = .suspendido
+    
+    var lugar_actual: UbicacionFisica?
+    
     var numero_contado: Int
-    /// var rol: RolesJuegoEscondidas = RolesJuegoEscondidas.suspendido
+    
+    var compañeros_de_juego: [JugadorDeEscondidas] = []
+    
+    /// Esto se agrega para confirmar si alguien tiene la estrellaFugaz
+    var tieneEstrella: Bool = false 
+    var estrellaFugaz: EstrellaFugaz? 
+    
     init(_ nombre: String, visibilidad: Double){
         self.visibilidad = visibilidad
         numero_contado = 0
         super.init(nombre)
+        lugar_actual = nil
     }
+    
     func actualizar() -> Bool{
-    switch(rol){
-        case .contando:
-            self.contar_para_buscar()
-        case .buscando_jugadores:
-            //self.cambiar_ubicacion()
-            //self.identificar_jugadores()
-            print("todo1")
-        case .cantar_victoria, .suspendido:
-            //self.haz_nada()
-            print("todo2")
-        default:
-            print("todo3")
-    }
+        switch(rol){
+            case .contando:
+                self.contar_para_buscar()
+            
+            case .buscando_jugadores:
+                self.identificar_jugadores()
+                self.moverse_de_lugar()
+            
+            case .buscando_escondite, .escondido:
+                self.moverse_de_lugar()
+                
+                // Aqui se confirma si alguien encontro la estrella fugaz
+                if let estrella = estrellaFugaz, self.lugar_actual == estrella.ubicacion && !self.tieneEstrella {
+                    print("\(self.nombre) ha encontrado la estrella fugaz!")
+                    self.tieneEstrella = true
+                    self.rol = .ganador_extra
+                }
+                
+                let quedarse_quieto = Int.random(in: 0...10)
+                if quedarse_quieto % 5 == 0{
+                    self.rol = .escondido
+                }
+                
+            case .cantar_victoria:
+                print("GANO!!!")
+                
+            case .ganador_extra:
+                print("\(nombre) ha ganado el juego encontrando la estrella!")
+                
+            case .suspendido:
+                print("YO \(nombre) he perdido")
+            
+            default:
+                print("todo")
+        }
         return false
     }
+    
+    func identificar_jugadores(){
+        for compañero in compañeros_de_juego{
+            if compañero.lugar_actual!.nombre == self.lugar_actual!.nombre{
+                let probabildiad_de_omitir = Int(compañero.visibilidad * 100)
+                
+                let suerte = Int.random(in: 0...100)
+                
+                if suerte > probabildiad_de_omitir{
+                    compañero.rol = .suspendido
+                }
+                
+            }
+        }
+    }
+    
+    func moverse_de_lugar(){
+        if self.lugar_actual?.lugares_cercanos.isEmpty ?? true {
+            return
+        }
+        
+        var indice_de_nuevo_lugar = Int.random(
+            in: 0..<lugar_actual!.lugares_cercanos.count
+        )
+            
+        var nuevo_lugar = lugar_actual!.lugares_cercanos[indice_de_nuevo_lugar]
+        
+        let deberia_de_cambiar = Int.random(in: 0...10)
+        
+        if deberia_de_cambiar % 2 == 0 {
+            _ = cambiar_de_lugar_a(nuevo_lugar)
+        }
+    }
+    
     func contar_para_buscar(){
         numero_contado += 1
-        print("Soy \(nombre) t voy en el \(numero_contado)")
+        print("Soy \(nombre) y voy en el \(numero_contado)")
+        
         if numero_contado > 10{
             self.rol = .buscando_jugadores
         }
     }
-
+    
+    func cambiar_de_lugar_a(_ ubicacion: UbicacionFisica) -> Bool{
+        if self.lugar_actual == nil {
+            self.lugar_actual = ubicacion
+            return true
+        }
+        
+        if ubicacion.nombre == self.lugar_actual!.nombre{
+            return false
+        }
+        
+        lugar_actual = ubicacion
+        return true
+    }
+    
+    func agregar_compañero(_ compañero_nuevo: JugadorDeEscondidas) -> Bool{
+        if compañero_nuevo.nombre == self.nombre{
+            return false
+        }
+        
+        for compañero in compañeros_de_juego{
+            if compañero.nombre == compañero_nuevo.nombre{
+                return false
+            }
+        }
+        
+        compañeros_de_juego.append(compañero_nuevo)
+        return true
+    }
 }
- 
-func iniciar_juego(jugadores: [JugadorDeEscondidas]) {
+
+func iniciar_juego(jugadores: [JugadorDeEscondidas], ubicaciones: [UbicacionFisica], estrellaFugaz: EstrellaFugaz) {
     let numero_del_jugador_que_busca = Int.random(in: 0..<jugadores.count)
-    var jugador_que_busca: JugadorDeEscondidas = jugadores[numero_del_jugador_que_busca]
+    let jugador_que_busca: JugadorDeEscondidas = jugadores[numero_del_jugador_que_busca]
+    
     jugador_que_busca.establecer_rol(.contando)
+    
+    /// Se le da una ubicacion a la estrella Fugaz
+    let ubicacionEstrellaAleatoria = ubicaciones[Int.random(in: 0..<ubicaciones.count)]
+    estrellaFugaz.ubicacion = ubicacionEstrellaAleatoria
+    print("La estrella fugaz ha sido colocada en \(estrellaFugaz.ubicacion.nombre).")
+    
     for jugador in jugadores {
-        if jugador.rol == .suspendido{
+        jugador.agregar_compañero(jugador)
+        
+        // Se da a cada jugador la ubicacion de la estrella
+        if let personaje = jugador as? PersonajeJugable {
+            personaje.estrellaFugaz = estrellaFugaz
+        }
+        
+        if jugador.rol == .suspendido {
             jugador.establecer_rol(.buscando_escondite)
         }
     }
 
- 
-    
-    // print("el numero del jugador es \(jugador_que_busca)")
+    if let jugadorBuscando = jugador_que_busca as? PersonajeJugable, let ubicacionInicio = ubicaciones.first {
+        jugadorBuscando.cambiar_de_lugar_a(ubicacionInicio)
+    }
 }
- 
+
 let punto_de_inicio = Ubicacion2Dimensiones(1, 3)
- 
+
 var jugadores: [PersonajeJugable] = []
- 
+
 jugadores.append(PersonajeJugable("Pepito Bananas", visibilidad: 0.5))
 jugadores.append(PersonajeJugable("Wally", visibilidad: 0.1))
 jugadores.append(PersonajeJugable("Chuchito", visibilidad: 0.2))
 jugadores.append(PersonajeJugable("Anabelle", visibilidad: 0.9))
- 
-let lobby = UbicacionFisica("Lobby")
+
+let loby = UbicacionFisica("Loby")
 let oficina = UbicacionFisica("Oficina")
 let sala_de_estar = UbicacionFisica("Sala de estar")
 let salon = UbicacionFisica("Salon")
 let baños = UbicacionFisica("Baños")
- 
-lobby.agregar_lugar(sala_de_estar)
-lobby.agregar_lugar(oficina)
- 
-var ubicaciones_juego [UbicacionFisica] = []
-ubicaciones_juego.append(Lobby)
- 
-iniciar_juego(jugadores: jugadores)
- 
+
+// Loby --- sala_de_estar
+loby.agregar_lugar(sala_de_estar)
+
+// Loby --- Salon
+loby.agregar_lugar(salon)
+
+// Loby --- oficina
+loby.agregar_lugar(oficina)
+
+// sala_de_estar --- Baño
+sala_de_estar.agregar_lugar(baños)
+
+// Salon --- Baño
+salon.agregar_lugar(baños)
+
+
+var ubicaciones_juego: [UbicacionFisica] = [loby, oficina, sala_de_estar, salon, baños]
+
+
+for jugador in jugadores{
+    // Lugar inical para todos los jugadores
+    _ = jugador.cambiar_de_lugar_a(loby)
+}
+
+
+// Aqui se crea la estrella fugaz
+let estrella_fugaz_del_juego = EstrellaFugaz(ubicacion: UbicacionFisica("Lugar Temporal"))
+
+iniciar_juego(jugadores: jugadores, ubicaciones: ubicaciones_juego, estrellaFugaz: estrella_fugaz_del_juego)
+
 for jugador in jugadores{
     print("El rol de \(jugador.nombre) es \(jugador.rol)")
+    print("Estoy en: \(jugador.lugar_actual?.nombre ?? "No se")")
+    print("Mis compañeros son: \(jugador.compañeros_de_juego.count)")
 }
- 
-//Aqui tenemos la parte de auto juego
+
+
 var ciclo_actual = 0
- 
-while true{
+
+while true {
     for jugador in jugadores{
         jugador.actualizar()
     }
+    
     for jugador in jugadores{
-    print("El rol de \(jugador.nombre) es \(jugador.rol)")
+        print("El rol de \(jugador.nombre) es \(jugador.rol)")
+        print("Estoy en: \(jugador.lugar_actual?.nombre ?? "No se")")
+        print("Mis compañeros son: \(jugador.compañeros_de_juego.count)")
     }
+    print("")
+    
+    // Esta condicion termina el juego si encuentran la estrella fugaz
+    if jugadores.contains(where: { $0.rol == .ganador_extra }) {
+        print("¡Juego terminado! Un jugador ha ganado encontrando la estrella fugaz.")
+        break
+    }
+    
     ciclo_actual += 1
     if ciclo_actual > 25{
         break
