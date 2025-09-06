@@ -1,3 +1,4 @@
+//Se agrego un objeto coleccionable Estralla Fugaz apara tener una condicion alternativa para ganar
 enum RolesJuegoEscondidas{
     case contando
     case buscando_jugadores
